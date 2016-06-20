@@ -29,8 +29,11 @@
 
 import os
 import sys
+import subprocess
 import pexpect
 import unittest
+import signal
+from pexpect import popen_spawn
 
 class Node:
     def __init__(self, nodeid):
@@ -52,15 +55,18 @@ class Node:
 
     def __init_sim(self, nodeid):
         """ Initialize a simulation node. """
+        cmd = '%s -c "' % os.environ['SHELL']
         if "top_builddir" in os.environ.keys():
             srcdir = os.environ['top_builddir']
-            cmd = '%s/examples/posix/app/cli/ot-cli' % srcdir
+            cmd += '%s/examples/posix/app/cli/ot-cli' % srcdir
         else:
-            cmd = './ot-cli'
+            cmd += './ot-cli'
         cmd += ' %d' % nodeid
+        cmd += ' 2>&3"'
         print cmd
+        os.dup2(1,3)
 
-        self.pexpect = pexpect.spawn(cmd, timeout=2)
+        self.pexpect = pexpect.popen_spawn.PopenSpawn(cmd, timeout=2)
 
     def __init_soc(self, nodeid):
         """ Initialize a System-on-a-chip node connected via UART. """
@@ -69,8 +75,12 @@ class Node:
         self.pexpect = fdpexpect.fdspawn(os.open(serialPort, os.O_RDWR|os.O_NONBLOCK|os.O_NOCTTY))
 
     def __del__(self):
-        self.pexpect.terminate()
-        self.pexpect.close(force=True)
+        try:
+            self.pexpect.terminate()
+            self.pexpect.close(force=True)
+        except AttributeError:
+            self.pexpect.kill(signal.SIGHUP)
+        os.system("killall ot-cli")
 
     def send_command(self, cmd):
         print self.nodeid, ":", cmd

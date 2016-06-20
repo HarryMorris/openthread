@@ -37,6 +37,8 @@
 
 #include <platform/logging.h>
 
+#include "posix-platform.h"
+
 void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
     struct timeval tv;
@@ -45,7 +47,7 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 
     gettimeofday(&tv, NULL);
     strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-    fprintf(stderr, "%s.%06d ", timeString, (uint32_t)tv.tv_usec);
+    fprintf(stderr, "%s.%06d %d ", timeString, (uint32_t)tv.tv_usec, NODE_ID);
 
     switch (aLogLevel)
     {
